@@ -49,10 +49,10 @@ led_b = GPIO(GPIO.GPIO6, GPIO.OUT)
 led_b.value(1) #RGBW LEDs are Active Low
 
 
-def play_sound(filename):
+def play_sound(filename, vol):
     try:
         player = audio.Audio(path = filename)
-        player.volume(100)
+        player.volume(vol)
         wav_info = player.play_process(wav_dev)
         wav_dev.channel_config(wav_dev.CHANNEL_1, I2S.TRANSMITTER,resolution = I2S.RESOLUTION_16_BIT, align_mode = I2S.STANDARD_MODE)
         wav_dev.set_sample_rate(wav_info[1])
@@ -74,7 +74,7 @@ def set_backlight(level):
     val = (level+7) << 4
     i2c.writeto_mem(0x34, 0x91,int(val))
 
-def show_logo():
+def show_logo(vol):
     try:
         img = image.Image("/sd/logo.jpg")
         set_backlight(0)
@@ -82,7 +82,7 @@ def show_logo():
         for i in range(9):
             set_backlight(i)
             time.sleep(0.1)
-        play_sound("/sd/logo.wav")
+        play_sound("/sd/logo.wav", vol)
 
     except:
         lcd.draw_string(lcd.width()//2-100,lcd.height()//2-4, "Error: Cannot find logo.jpg", lcd.WHITE, lcd.RED)
@@ -122,3 +122,12 @@ def get_color(r,g,b):
     hi = val >> 8
     lo = val & 0xff
     return (lo << 8) | hi
+
+def check_but():
+    if but_a.value() == 0:
+        print('[info]: Button A pushed')
+        return 'A'
+    if but_b.value() == 0:
+        print('[info]: Button B pushed')
+        return 'B'
+    return None

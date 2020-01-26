@@ -25,14 +25,20 @@ uart_Port = UART(UART.UART2, 115200,8,0,0, timeout=1000, read_buf_len= 4096)
 
 def get_feature(task):
     count = 20
+    print('get_feature 1')
     for i in range(3):
+        print('get_feature 2-' + str(3-i))
+        br.play_sound("/sd/voice/"+str(3-i)+"s.wav", vol)
         for j in range(count):
             img = sensor.snapshot()
             if j < (count>>1):
                 img.draw_rectangle(1,46,222,132,color=br.get_color(255,0,0),thickness=3)
             lcd.display(img)
-    time.sleep(1.0)
+#    print('get_feature 2')
+#    time.sleep(1.0)
+    print('get_feature 3')
     feature = kpu.forward(task,img)
+    print('get_feature 4')
     return np.array(feature[:])
 
 def get_nearest(feature_list,feature):
@@ -97,10 +103,13 @@ def save(filename,feature_list):
 def send_packet(message):
     data_packet = bytearray(message+'\x00')
     uart_Port.write(data_packet)
+
+vol=10
+
 #
 # main
 #
-br.show_logo()
+br.show_logo(vol)
 br.exit_check()
 
 feature_file = "/sd/features.csv"
@@ -120,6 +129,17 @@ marker_0_100=0
 clock = time.clock()
 try:
     while(True):
+        but = br.check_but()
+        if but == 'A':
+            if vol < 100:           # 最大100
+                vol = vol + 10
+            print('@@@ inc vol:' + str(vol))
+            br.play_sound("/sd/logo.wav", vol)
+        if but == 'B':
+            if vol > 0:
+                vol = vol - 10
+            print('@@@ dec vol:' + str(vol))
+            br.play_sound("/sd/logo.wav", vol)
         img = sensor.snapshot()
 
         # QR Code check
@@ -127,13 +147,15 @@ try:
         if len(res) > 0:
             name = res[0].payload()
             if name=="*reset":
+                print('@@@ reset')
                 feature_list = []
                 feature_0 = []
                 feature_100 = []
                 save(feature_file, feature_list)
-                br.play_sound("/sd/reset.wav")
+                br.play_sound("/sd/reset.wav", vol)
             else:
-                br.play_sound("/sd/camera.wav")
+                print('@@@ recording')
+                br.play_sound("/sd/camera.wav", vol)
                 feature = get_feature(task)
                 feature_list.append([name,feature])
                 if name=='0':
@@ -141,10 +163,11 @@ try:
                 if name=='100':
                     feature_100.append([name,feature])
                 save(feature_file, feature_list)
-                br.play_sound("/sd/set.wav")
+                br.play_sound("/sd/set.wav", vol)
                 gc.collect()
                 # print(gc.mem_free())
                 kpu.fmap_free(feature)
+                print('@@@ record finished')
             print("[QR]: " + name)
             continue
 
@@ -173,7 +196,7 @@ try:
                 print("[DETECTED]: " + name)
                 lcd.display(img)
                 send_packet(name)
-                br.play_sound("/sd/voice/"+name+".wav")
+                br.play_sound("/sd/voice/"+name+".wav", vol)
                 old_name = name
         else:
             old_name = ''
